@@ -1,0 +1,62 @@
+# ============================================
+# 模型参数配置 (Model Parameter Thresholds)
+# ============================================
+# Step3 建模阶段使用此配置文件
+# 路径: config/model_param_thresholds.yaml
+
+# ---- 贝叶斯优化配置 ----
+bayesian_optimization:
+  n_runs: 5                  # 贝叶斯优化总轮数
+  init_points: 10             # 每轮初始随机采样点数（随机搜索）
+  n_iter: 30                  # 每轮贝叶斯迭代次数（在 init_points 之后）
+  random_state: 42            # 随机种子，保证可复现
+  loss_function: "binary"     # 损失函数类型
+
+# ---- LightGBM 参数搜索空间 ----
+lgbm_search_space:
+  num_leaves:
+    min: 2
+    max: 31
+  learning_rate:
+    min: 0.01
+    max: 0.5                 # 与独立脚本 5.模型训练.py 一致
+  n_estimators:
+    min: 500
+    max: 1000
+  feature_fraction:          # → colsample_bytree
+    min: 0.4
+    max: 0.9
+  bagging_fraction:          # → subsample
+    min: 0.4
+    max: 0.95               # 独立脚本默认 (0.4,0.7)，放宽至配置范围
+  min_child_samples:
+    min: 100
+    max: 256
+  reg_alpha:
+    min: 0.1
+    max: 10.0               # 与独立脚本一致
+  reg_lambda:
+    min: 0.1
+    max: 10.0               # 与独立脚本一致
+
+# ---- 训练数据分割 ----
+data_split:
+  oot_months_tail: 4          # 最后几个月作为 OOT 测试集
+  val_ratio: 0.3              # 训练集中划分验证集的比例
+  random_state: 42            # 数据拆分随机种子
+
+# ---- 早期停止 ----
+early_stopping:
+  enabled: true               # 是否启用早停
+  patience: 100               # 与独立脚本 consistent (100)
+
+# ---- 过拟合惩罚 (独立脚本中 lgb_cv 函数使用) ----
+overfitting_penalty:
+  ks_threshold: 0.02          # KS_diff 超过此值开始惩罚
+  penalty_factor: 300         # 惩罚力度系数
+
+# ---- 交叉验证 ----
+cross_validation:
+  n_splits: 5                 # StratifiedKFold 折数
+  shuffle: true
+  random_state: 42

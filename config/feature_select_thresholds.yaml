@@ -1,0 +1,53 @@
+# ============================================
+# 特征筛选阈值配置 (Feature Selection Thresholds)
+# ============================================
+# Step2 使用此配置文件 (IV 计算在 Step2 执行)
+# PSI 在 Step1 执行，IV 在 Step2 执行，相关性在 Step1 执行
+# 路径: config/feature_select_thresholds.yaml
+
+feature_selection:
+  missing_rate_max: 0.8        # 缺失率上限，超过则判定为该条件不通过
+  iv_min: 0.001                 # IV 值下限，低于此值视为弱特征
+  psi_max: 0.25                # PSI 最大值上限，超过则判定为不稳定（需 psi_filter 开关打开才生效）
+  corr_threshold: 0.80         # 相关性去重阈值，超过则保留 IV 高者（需 corr_filter 开关打开才生效）
+  feat_count_min: 200          # 目标特征数量下限（自适应调整）
+  feat_count_max: 250          # 目标特征数量上限（自适应调整）
+
+  # ---- 投票筛选配置 ----
+  # vote_pass_count: 每个特征需通过的票数才保留
+  # 参与投票的条件取决于 EDA 环节实际执行了哪些检查：
+  #   - missing_rate (缺失率)     <- Step1产出，总是可用
+  #   - iv (信息价值)             <- Step2 自行计算
+  #   - psi (稳定性)              <- Step1产出，若未执行则默认全部通过
+  #   - corr (相关性)             <- Step1产出，若未执行则默认全部通过
+  # 例如：4个条件都参与时 vote_pass_count=3 -> 允许一个条件不达标仍保留
+  #       vote_pass_count=4 -> 必须全部通过才保留（等价于旧版硬过滤）
+  # 注意：vote_pass_count <= 实际参与投票的条件数
+  vote_pass_count: 3           # 投票通过门槛（>=此票数则保留）
+
+# ---- PSI 分箱参数 ----
+psi:
+  bin_num: 10                  # PSI 分箱数
+  bin_method: "equal_width"    # 分箱方法
+
+# ---- IV 分箱参数 ----
+iv:
+  bin_method: "equal_width"       # IV 分箱方法
+  positive_label: 1            # 正样本标签值
+
+# ---- 相关性分析 ----
+correlation:
+  figsize:
+    width: 10                  # 热力图宽度
+    height: 8                  # 热力图高度
+  annot: false                 # 是否在热力图中显示数值（大量特征时关闭）
+  dpi: 150                     # 保存分辨率
+  sample_size: 10000            # 特征>200时的子采样行数
+
+# ---- 人工干预列表 ----
+# 以下两个列表用于 EDA 报告阅读后的人工干预输入
+# var_keep_list: 投票不满足标准仍强制保留的特征（业务意义强等）
+# var_drop_list: 投票满足标准仍强制删除的特征（如合规原因、数据泄露嫌疑等）
+# 格式：YAML 列表，留空或写 [] 表示不干预
+var_keep_list: []              # 强制保留列表
+var_drop_list: []              # 强制删除列表

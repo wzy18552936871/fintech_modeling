@@ -1,0 +1,196 @@
+# ============================================
+# 输出控制配置 (Output Control & Pipeline Toggles)
+# ============================================
+# 定义：每一步执行哪些子功能、产出哪些文件、是否开启某项能力
+# driver.py 和各步骤主入口读取此配置决定行为
+# ⚠️ 注意：所有默认值与对应 main_stepX.py / 独立脚本硬编码值同步
+
+# ================================================================
+# Pipeline 级开关 —— 控制哪些步骤节点参与流水线
+# ================================================================
+pipeline:
+  run_step1_eda: true
+  run_step2_feature_select: true
+  run_step3_modeling: true
+  run_step4_evaluation: true       # 单任务评估（每个 label 跑一次）
+  run_step5_report: true           # 最终结案综合报告
+
+# ================================================================
+# Step 1 — EDA 输出控制
+# ================================================================
+# ================================================================
+# Step 1 — EDA 输出控制 & 参数配置
+# ================================================================
+step1_eda:
+  enabled: true
+
+  # ---- 智能抽样配置 ----
+  sampling:
+    max_full_features: 500           # 特征数 < 此值时考虑全量跑
+    max_full_rows: 200000            # 样本量 < 此值时考虑全量跑
+    sample_size: 100000             # 不满足全量条件时的抽样条数
+    random_seed: 42                 # 抽样随机种子
+
+  # ---- 变量详细 EDA 配置 ----
+  variable_eda:
+    special_values:
+      - 0                          # 默认单独统计 0 的 cnt；可按需添加 -9, -1 等
+    compute_unique: true           # 是否计算 unique 值数量（耗资源，首次接触数据建议打开）
+    unique_to_char_threshold: 20    # num 变量 unique 数 < 此阈值时自动转为 char 模式统计
+
+  # ---- 可选高级分析开关 ----
+  optional_analysis:
+    compute_psi: true              # 是否计算全量变量逐月 PSI（默认关闭，量较大）
+    compute_correlation: false      # 是否计算相关性矩阵（默认关闭）
+
+  # ---- 输出控制 ----
+  outputs:
+    wide_table:
+      filename: "wide_table"
+      format: "csv"
+      generate: true
+    preprocessed_data:
+      filename: "preprocessed_data"
+      format: "csv"
+      generate: true
+    missing_rate:
+      filename: "missing_rate"
+      format: "xlsx"
+      generate: true
+    label_distribution:
+      filename: "label_distribution"
+      format: "xlsx"
+      generate: true
+    # 新增 EDA 输出
+    basic_summary_all:
+      filename: "eda_basic_summary_all"
+      format: "xlsx"
+      generate: true                # 基础 EDA：全样本统计
+    basic_summary_by_month:
+      filename: "eda_basic_summary_month"
+      format: "xlsx"
+      generate: true                # 分月统计
+    basic_summary_by_group:
+      filename: "eda_basic_summary_group"
+      format: "xlsx"
+      generate: true                # 分 Group 统计
+    variable_eda_numeric:
+      filename: "eda_variable_numeric"
+      format: "xlsx"
+      generate: true                # 数值型变量详细 EDA
+    variable_eda_categorical:
+      filename: "eda_variable_categorical"
+      format: "xlsx"
+      generate: true                # 字符型变量详细 EDA
+    variable_eda_num_to_char_list:
+      filename: "eda_num_to_char_vars"
+      format: "csv"
+      generate: false               # unique 开关打开时才生成
+    psi_all_variables:
+      filename: "psi_all_variables"
+      format: "xlsx"
+      generate: true               # PSI 开关打开时才生成
+    correlation_matrix:
+      filename: "correlation_matrix"
+      format: "xlsx"
+      generate: false               # Corr 开关打开时才生成
+
+# ================================================================
+# Step 2 — 特征筛选输出控制
+# ================================================================
+# ⚠️ Step2 仅自己计算 IV；PSI 与相关性矩阵均在 Step1 完成，Step2 只引用已有结果
+step2_feature_select:
+  enabled: true
+  functions:
+    compute_iv: true                 # Step2 自己：基于全量数据计算 IV 值（不分 label 分组）
+    reuse_psi_from_step1: true       # 引用 Step1 产出的 PSI 结果（若存在则复用，不再重算）
+    reuse_correlation_from_step1: true  # 引用 Step1 产出的相关性矩阵（若存在则复用，不再重算）
+    missing_rate_filter: true        # 复用 Step1 缺失率过滤
+  outputs:
+    selected_features:
+      filename: "selected_features"
+      format: "csv"
+      generate: true
+    iv_summary:
+      filename: "iv_summary"
+      format: "xlsx"
+      generate: true
+
+# ================================================================
+# Step 3 — 建模输出控制
+# ================================================================
+step3_modeling:
+  enabled: true
+  functions:
+    bayesian_optimization: true     # 贝叶斯超参搜索
+    save_per_round: true           # 保存每轮模型和参数（与 main_step3 一致）
+    early_stopping: true           # 早停机制
+  outputs:
+    final_model:
+      filename: "final_model"       # driver auto-appends task_id suffix
+      format: "pkl"
+      generate: true
+    round_models:
+      filename_prefix: "it"         # it_{N}_{label}_{task_id}_model.pkl
+      format: "pkl"
+      generate: true                # 与 main_step3 一致，每轮保存
+    round_params:
+      filename_prefix: "it"         # it_{N}_{label}_{task_id}_params.json
+      format: "json"
+      generate: true
+    best_params_summary:
+      filename: "best_params"
+      format: "json"
+      generate: true
+
+# ================================================================
+# Step 4 — 模型评估输出控制（单任务评估报告）
+# ================================================================
+step4_evaluation:
+  enabled: true
+  functions:
+    model_score_eval: true        # 模型整体评分 KS/AUC
+    monthly_ks_auc: true          # 按月维度 KS/AUC（与 main_step4 默认一致）
+    feature_importance: true      # 特征重要性提取
+    monthly_bin_bad_rate: true    # 变量每月分箱占比坏率图（Top20，与 main_step4 一致）
+    overfitting_check: true       # 过拟合红线检查
+  outputs:
+    model_ks_auc_by_month:
+      filename: "model_ks_auc_by_month"
+      format: "xlsx"
+      generate: true
+    feature_importance:
+      filename: "feature_importance"
+      format: "csv"
+      generate: true
+    monthly_bin_bad_rate:
+      filename: "monthly_bin_bad_rate"
+      format: "xlsx"
+      generate: true
+
+# ================================================================
+# Step 5 — 最终结案综合报告（多任务聚合）
+# ================================================================
+step5_report:
+  enabled: true
+  functions:
+    aggregate_all_tasks: true     # 聚合所有建模任务的评估结果
+    model_comparison: true       # 多模型对比表
+    overall_summary: true        # 总览 Dashboard
+  outputs:
+    final_consolidated_report:
+      filename: "final_consolidated_report"
+      format: "xlsx"
+      generate: true
+    task_comparison:
+      filename: "task_comparison"
+      format: "xlsx"
+      generate: true
+
+# ================================================================
+# 通用选项
+# ================================================================
+general:
+  verbose: true                   # 详细日志输出
+  save_training_history: true     # 保存训练历史数据
+  overwrite_existing: true       # True=覆盖已有文件, False=跳过

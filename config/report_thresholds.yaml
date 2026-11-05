@@ -1,0 +1,27 @@
+# ============================================
+# 模型评估阈值配置 (Model Evaluation Thresholds)
+# ============================================
+# Step4 评估阶段使用此配置文件
+# 路径: config/report_thresholds.yaml
+
+# ---- KS / AUC 红线 ----
+evaluation:
+  ks_overfitting_gap: 0.05    # Train KS - OOT KS 最大允许差值（超过则告警过拟合）
+  auc_min_acceptable: 0.55    # AUC 最低可接受线（与 main_step4 / main_step3 默认一致）
+  auc_min_excellent: 0.65     # AUC 优异线（高于此值视为优秀模型）
+  ks_min_good: 0.25           # KS 良好线（高于此值区分能力尚可）
+
+# ---- 月度评估阈值 ----
+monthly_evaluation:
+  auc_min_by_month: 0.51      # 单月 AUC 最低要求
+  ks_min_by_month: 0.15       # 单月 KS 最低要求
+
+# ---- PSI 稳定性红线 ----
+stability:
+  psi_max_acceptable: 0.25    # PSI 最大可接受值（>0.25 分布显著漂移）
+  psi_warning: 0.10           # PSI 预警线（>0.10 需关注）
+
+# ---- 评估报告参数 ----
+evaluation_report:
+  top_features_for_charts: 20   # 仅取 Top N 特征画分箱坏率图（与 main_step4 一致）
+  num_bins: 10                  # 每月分箱占比坏率图的默认分箱数

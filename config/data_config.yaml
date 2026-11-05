@@ -1,0 +1,31 @@
+## ============================================
+## 数据表配置 (Data Table Configuration)
+## ============================================
+## ⚠️ 此文件仅为 skill 模板占位符，实际配置从项目目录读取
+key_col: ''
+labels:
+  p3m2:
+    col_name: p3m2
+    description: P3M2 标签
+    positive_class: 1
+  p4m2:
+    col_name: p4m2
+    description: P4M2 标签
+    positive_class: 1
+  p5m2:
+    col_name: p5m2
+    description: P5M2 标签
+    positive_class: 1
+  p6m2:
+    col_name: p6m2
+    description: P6M2 标签
+    positive_class: 1
+data_sources: []
+
+analysis_dims:
+  month_col: app_date
+  group_by_cols:
+  - event_name
+  - tp
+  - tmpf
+drop_cols: []
